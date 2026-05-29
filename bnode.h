@@ -35,17 +35,13 @@ public:
    // Construct
    //
    BNode()
-   {
-      pLeft = pRight = this;
-   }
-   BNode(const T &  t) 
-   {
-      pLeft = pRight = this;
-   }
-   BNode(T && t) 
-   {
-      pLeft = pRight = this;
-   }
+      : pLeft(nullptr), pRight(nullptr), pParent(nullptr), data() {}
+
+   BNode(const T& t)
+      : pLeft(nullptr), pRight(nullptr), pParent(nullptr), data(t) {}
+
+   BNode(T&& t)
+      : pLeft(nullptr), pRight(nullptr), pParent(nullptr), data(std::move(t)) {}
 
    //
    // Data
@@ -63,7 +59,10 @@ public:
 template <class T>
 inline size_t size(const BNode <T> * p)
 {
-   return 99;
+   if (p == nullptr)
+      return 0;
+   else
+      return size(p->pLeft) + 1 + size(p->pRight);
 }
 
 
@@ -74,7 +73,11 @@ inline size_t size(const BNode <T> * p)
 template <class T>
 inline void addLeft(BNode <T> * pNode, BNode <T> * pAdd)
 {
+   if (pAdd != nullptr)
+      pAdd->pParent = pNode;
+   pNode->pLeft = pAdd;
 
+   return;
 }
 
 /******************************************************
@@ -84,7 +87,11 @@ inline void addLeft(BNode <T> * pNode, BNode <T> * pAdd)
 template <class T>
 inline void addRight (BNode <T> * pNode, BNode <T> * pAdd)
 {
+   if (pAdd != nullptr)
+      pAdd->pParent = pNode;
+   pNode->pRight = pAdd;
 
+   return;
 }
 
 /******************************************************
@@ -94,13 +101,21 @@ inline void addRight (BNode <T> * pNode, BNode <T> * pAdd)
 template <class T>
 inline void addLeft (BNode <T> * pNode, const T & t) 
 {
+   BNode<T>* pAdd = new BNode<T>(std::move(t));
+   pAdd->pParent = pNode;
+   pNode->pLeft = pAdd;
 
+   return;
 }
 
 template <class T>
 inline void addLeft(BNode <T>* pNode, T && t)
 {
+   BNode<T>* pAdd = new BNode<T>(std::move(t));
+   pAdd->pParent = pNode;
+   pNode->pLeft = pAdd;
 
+   return;
 }
 
 /******************************************************
@@ -110,13 +125,21 @@ inline void addLeft(BNode <T>* pNode, T && t)
 template <class T>
 void addRight (BNode <T> * pNode, const T & t)
 {
+   BNode<T>* pAdd = new BNode<T>(std::move(t));
+   pAdd->pParent = pNode;
+   pNode->pRight = pAdd;
 
+   return;
 }
 
 template <class T>
 void addRight(BNode <T>* pNode, T && t)
 {
+   BNode<T>* pAdd = new BNode<T>(std::move(t));
+   pAdd->pParent = pNode;
+   pNode->pRight = pAdd;
 
+   return;
 }
 
 /*****************************************************
@@ -127,7 +150,13 @@ void addRight(BNode <T>* pNode, T && t)
 template <class T>
 void clear(BNode <T> * & pThis)
 {
+   if (pThis == nullptr)
+      return;
 
+   clear(pThis->pLeft);
+   clear(pThis->pRight);
+   delete pThis;
+   pThis = nullptr;
 }
 
 /***********************************************
@@ -138,7 +167,9 @@ void clear(BNode <T> * & pThis)
 template <class T>
 inline void swap(BNode <T>*& pLHS, BNode <T>*& pRHS)
 {
-
+   BNode<T>* temp = pLHS;
+   pLHS = pRHS;
+   pRHS = temp;
 }
 
 /**********************************************
@@ -149,7 +180,22 @@ inline void swap(BNode <T>*& pLHS, BNode <T>*& pRHS)
 template <class T>
 BNode <T> * copy(const BNode <T> * pSrc) 
 {
-   return new BNode<T>;
+   if (pSrc == nullptr)
+      return nullptr;
+
+   BNode<T>* pDes = new BNode<T>(pSrc->data);
+
+   pDes->pLeft = copy(pSrc->pLeft);
+
+   if (pDes->pLeft != NULL)
+      pDes->pLeft->pParent = pDes;
+
+   pDes->pRight = copy(pSrc->pRight);
+
+   if (pDes->pRight != NULL)
+      pDes->pRight->pParent = pDes;
+
+   return pDes;
 }
 
 /**********************************************
@@ -160,5 +206,37 @@ BNode <T> * copy(const BNode <T> * pSrc)
 template <class T>
 void assign(BNode <T> * & pDest, const BNode <T>* pSrc)
 {
+   if (pSrc == nullptr)
+   {
+      clear(pDest);
+      return;
+   }
 
+   if (pDest == nullptr and pSrc != NULL)
+   {
+      pDest = new BNode<T>(pSrc->data);
+      assign(pDest->pRight, pSrc->pRight);
+      assign(pDest->pLeft, pSrc->pLeft);
+
+      if (pDest->pLeft)
+         pDest->pLeft->pParent = pDest;
+      if (pDest->pRight)
+         pDest->pRight->pParent = pDest;
+
+      return;
+   }
+
+   if (pDest != NULL and pSrc != NULL)
+   {
+      pDest->data = pSrc->data;
+      assign(pDest->pRight, pSrc->pRight);
+      assign(pDest->pLeft, pSrc->pLeft);
+
+      if (pDest->pLeft)
+         pDest->pLeft->pParent = pDest;
+      if (pDest->pRight)
+         pDest->pRight->pParent = pDest;
+
+      return;
+   }
 }
