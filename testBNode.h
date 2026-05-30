@@ -209,16 +209,24 @@ public:
    // copy the standard fixture
    void test_copy_standard()
    {  // setup
+      BNode <Spy>* pDest = nullptr;
       //                      (50) = pSrc
       //            +----------+----------+
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      BNode <Spy>* pSrc = setupStandardFixture();
+      Spy::reset();
       // exercise
+      pDest = copy(pSrc);
       // verify
-      // copy     [26][38][49][50][64][73][85]
-      // allocate [26][38][49][50][64][73][85]
-      assertUnit(NOT_YET_IMPLEMENTED);
+      assertUnit(Spy::numCopy() == 7);        // copy     [26][38][49][50][64][73][85]
+      assertUnit(Spy::numAlloc() == 7);       // allocate [26][38][49][50][64][73][85]
+      assertUnit(Spy::numDefault() == 0);
+      assertUnit(Spy::numDelete() == 0);
+      assertUnit(Spy::numNondefault() == 0);
+      assertUnit(Spy::numCopyMove() == 0);
+      assertUnit(pSrc != pDest);
       //                      (50) = pDest
       //            +----------+----------+
       //           (38)                  (73)
@@ -229,7 +237,11 @@ public:
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      assertStandardFixture(pSrc);
+      assertStandardFixture(pDest);
       // teardown
+      teardownStandardFixture(pSrc);
+      teardownStandardFixture(pDest);
    }
 
    /***************************************
@@ -566,19 +578,32 @@ public:
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      BNode <Spy>* pLHS = setupStandardFixture();
 
       //                      (99) = pRHS
+      BNode <Spy>* pRHS = new BNode<Spy>(Spy(99));
+      Spy::reset();
       // exercise
+      swap(pLHS, pRHS);
       // verify
-      assertUnit(NOT_YET_IMPLEMENTED);
+      assertUnit(Spy::numDefault() == 0);
+      assertUnit(Spy::numAlloc() == 0);
+      assertUnit(Spy::numDelete() == 0);
+      assertUnit(Spy::numNondefault() == 0);
+      assertUnit(Spy::numCopy() == 0);
+      assertUnit(Spy::numCopyMove() == 0);
       //                      (99) = pLHS
+      assertUnit(pLHS != nullptr);
+      assertUnit(pLHS->data == 99);
 
       //                      (50) = pRHS
       //            +----------+----------+
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      assertStandardFixture(pRHS);
       // teardown
+      teardownStandardFixture(pRHS);
    }
 
 
@@ -639,14 +664,29 @@ public:
    // size of the standard fixture
    void test_size_standard()
    {  // setup
-      //                      (50) 
+      //                      (50)
       //            +----------+----------+
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      BNode <Spy>* bn = setupStandardFixture();
+      Spy::reset();
       // exercise
+      size_t s = size(bn);
       // verify
+      assertUnit(Spy::numCopy() == 0);
+      assertUnit(Spy::numAlloc() == 0);
+      assertUnit(Spy::numDefault() == 0);
+      assertUnit(Spy::numDelete() == 0);
+      assertUnit(Spy::numNondefault() == 0);
+      assertUnit(Spy::numCopyMove() == 0);
+      assertUnit(Spy::numAssign() == 0);
+      assertUnit(Spy::numAssignMove() == 0);
+      assertUnit(Spy::numDestructor() == 0);
+      assertUnit(s == 7);
+      assertStandardFixture(bn);
       // teardown
+      teardownStandardFixture(bn);
    }
 
    /***************************************
@@ -710,10 +750,25 @@ public:
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      BNode <Spy>* pSrc = setupStandardFixture();
+      BNode <Spy>* p64 = nullptr;
+      if (pSrc && pSrc->pLeft)
+         p64 = pSrc->pRight->pLeft;
+      Spy s(59);
+      Spy::reset();
       // exercise
+      addLeft(p64, s);
       // verify
-      // copy [59]
-      // allocate [59]
+      assertUnit(Spy::numCopy() == 1);       // copy [59]
+      assertUnit(Spy::numAlloc() == 1);      // allocate [59]
+      assertUnit(Spy::numDefault() == 0);
+      assertUnit(Spy::numDelete() == 0);
+      assertUnit(Spy::numNondefault() == 0);
+      assertUnit(Spy::numCopyMove() == 0);
+      assertUnit(Spy::numAssign() == 0);
+      assertUnit(Spy::numAssignMove() == 0);
+      assertUnit(Spy::numDestructor() == 0);
+      assertUnit(s == Spy(59));
       //                      (50) = pSrc
       //            +----------+----------+
       //           (38)                  (73)
@@ -721,8 +776,32 @@ public:
       //      (26)      (49)        (64)      (85)
       //                          +--+
       //                         (59)
-      assertUnit(NOT_YET_IMPLEMENTED);
+      assertUnit(pSrc != nullptr);
+      if (pSrc)
+      {
+         assertUnit(pSrc->pRight != nullptr);
+         if (pSrc->pRight)
+         {
+            assertUnit(pSrc->pRight->pLeft);
+            if (pSrc->pRight->pLeft)
+            {
+               assertUnit(pSrc->pRight->pLeft->pLeft != nullptr);
+               if (pSrc->pRight->pLeft->pLeft)
+               {
+                  assertUnit(pSrc->pRight->pLeft->pLeft->data == Spy(59));
+                  assertUnit(pSrc->pRight->pLeft->pLeft->pLeft == nullptr);
+                  assertUnit(pSrc->pRight->pLeft->pLeft->pRight == nullptr);
+                  assertUnit(pSrc->pRight->pLeft->pLeft->pParent == pSrc->pRight->pLeft);
+                  if (pSrc->pRight->pLeft->pLeft != pSrc->pRight->pLeft)
+                     delete pSrc->pRight->pLeft->pLeft;
+                  pSrc->pRight->pLeft->pLeft = nullptr;
+               }
+            }
+         }
+      }
+      assertStandardFixture(pSrc);
       // teardown
+      teardownStandardFixture(pSrc);
    }
 
    // add one copy-value to the right of a single-node btree
@@ -1000,9 +1079,24 @@ public:
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
       BNode <Spy>* pSrc = setupStandardFixture();
+      BNode <Spy>* p64 = nullptr;
+      if (pSrc && pSrc->pRight)
+         p64 = pSrc->pRight->pLeft;
+      Spy s(67);
+      Spy::reset();
       // exercise
+      addRight(p64, std::move(s));
       // verify
-      assertUnit(NOT_YET_IMPLEMENTED);
+      assertUnit(Spy::numCopyMove() == 1);  // create-move [67]
+      assertUnit(Spy::numCopy() == 0);
+      assertUnit(Spy::numAlloc() == 0);
+      assertUnit(Spy::numDefault() == 0);
+      assertUnit(Spy::numDelete() == 0);
+      assertUnit(Spy::numNondefault() == 0);
+      assertUnit(Spy::numAssign() == 0);
+      assertUnit(Spy::numAssignMove() == 0);
+      assertUnit(Spy::numDestructor() == 0);
+      assertUnit(s.empty() == true);
       // create-move [67]
       //                      (50) = pSrc
       //            +----------+----------+
@@ -1011,7 +1105,32 @@ public:
       //      (26)      (49)        (64)      (85)
       //                             +--+
       //                               (67)
+      assertUnit(pSrc != nullptr);
+      if (pSrc)
+      {
+         assertUnit(pSrc->pRight != nullptr);
+         if (pSrc->pRight)
+         {
+            assertUnit(pSrc->pRight->pLeft);
+            if (pSrc->pRight->pLeft)
+            {
+               assertUnit(pSrc->pRight->pLeft->pRight != nullptr);
+               if (pSrc->pRight->pLeft->pRight)
+               {
+                  assertUnit(pSrc->pRight->pLeft->pRight->data == Spy(67));
+                  assertUnit(pSrc->pRight->pLeft->pRight->pLeft == nullptr);
+                  assertUnit(pSrc->pRight->pLeft->pRight->pRight == nullptr);
+                  assertUnit(pSrc->pRight->pLeft->pRight->pParent == pSrc->pRight->pLeft);
+                  if (pSrc->pRight->pLeft->pRight != pSrc->pRight->pLeft)
+                     delete pSrc->pRight->pLeft->pRight;
+                  pSrc->pRight->pLeft->pRight = nullptr;
+               }
+            }
+         }
+      }
+      assertStandardFixture(pSrc);
       // teardown
+      teardownStandardFixture(pSrc);
    }
 
    // add one node to the left of a single-node btree
@@ -1375,10 +1494,21 @@ public:
       //           (38)                  (73)
       //       +----+----+           +----+----+
       //      (26)      (49)        (64)      (85)
+      BNode <Spy>* bn = setupStandardFixture();
+      Spy::reset();
       // exercise
+      clear(bn);
       // verify
-      // destroy [26][38][49][50][64][73][85]
-      // delete  [26][38][49][50][64][73][85]
+      assertUnit(Spy::numDestructor() == 7);   // destroy [26][38][49][50][64][73][85]
+      assertUnit(Spy::numDelete() == 7);       // delete  [26][38][49][50][64][73][85]
+      assertUnit(Spy::numCopy() == 0);
+      assertUnit(Spy::numAlloc() == 0);
+      assertUnit(Spy::numDefault() == 0);
+      assertUnit(Spy::numNondefault() == 0);
+      assertUnit(Spy::numCopyMove() == 0);
+      assertUnit(Spy::numAssign() == 0);
+      assertUnit(Spy::numAssignMove() == 0);
+      assertUnit(bn == nullptr);
    }  // teardown
 
 
